@@ -1,36 +1,40 @@
-name: ASP.NET Core CI/CD
+name: CI
 
-on: [push]
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push request event for the master branch
+  push:    
+    branches: [main]
 
 jobs:
-  build:
+  deploy:
+    # Our previously created self-hosted runner
     runs-on: self-hosted
 
+    strategy:
+      matrix:
+        dotnet: ["8.0.x"]
+
+    # A sequence of tasks that will execute as part of the job
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      # Checks out repository so our job can access it
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
 
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: '8.x' # Укажите нужную версию .NET Core SDK
+      - name: Install dependencies
+        run: dotnet restore
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
 
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
+      # We will output publish files to the folder we previously created
+      - name: Publish
+        run: dotnet publish -c Release -o /var/www/sample-app
 
-    - name: Publish
-      run: dotnet publish -c Release -o ./publish
-
-    - name: Deploy
-      run: |
-        # Остановите текущее запущенное приложение, если оно есть
-        sudo systemctl stop TestApi || true
-
-        # Скопируйте опубликованные файлы в нужную директорию
-        sudo cp -r ./publish/* /var/www/myapp/
-
-        # Запустите приложение
-        sudo systemctl start TestApi
+      - name: Restart the app
+        run: |
+          export XDG_RUNTIME_DIR=/run/user/$(id -u)
+          systemctl --user restart sample-app.service
