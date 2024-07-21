@@ -1,40 +1,17 @@
-name: CI
+name: Self-Hosted Runner Example
 
-# Controls when the workflow will run
-on:
-  # Triggers the workflow on push request event for the master branch
-  push:    
-    branches: [main]
+on: [push]
 
 jobs:
-  deploy:
-    # Our previously created self-hosted runner
+  build:
     runs-on: self-hosted
 
-    strategy:
-      matrix:
-        dotnet: ["8.0.x"]
-
-    # A sequence of tasks that will execute as part of the job
     steps:
-      # Checks out repository so our job can access it
-      - uses: actions/checkout@v2
-      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v1.7.2
-        with:
-          dotnet-version: ${{ matrix.dotnet-version }}
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      - name: Install dependencies
-        run: dotnet restore
+    - name: Print Hello World
+      run: echo "Hello, World!"
 
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
-
-      # We will output publish files to the folder we previously created
-      - name: Publish
-        run: dotnet publish -c Release -o /var/www/sample-app
-
-      - name: Restart the app
-        run: |
-          export XDG_RUNTIME_DIR=/run/user/$(id -u)
-          systemctl --user restart sample-app.service
+    - name: Print Hello World
+      run: echo "Hello, World! test"
